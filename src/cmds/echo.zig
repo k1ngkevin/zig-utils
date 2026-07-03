@@ -23,33 +23,29 @@ pub fn run(io: std.Io, args: []const []const u8) !void {
         positional_start = args.len;
     }
 
-    var stdout_writer: *std.Io.Writer = undefined;
-
-    if (interpret_esc) {
-        var stdout_buffer: [1024]u8 = undefined;
-        var stdout_file_writer: std.Io.File.Writer = .init(.stdout(), io, &stdout_buffer);
-
-        stdout_writer = &stdout_file_writer.interface;
-    }
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_file_writer: std.Io.File.Writer = .init(.stdout(), io, &stdout_buffer);
+    const stdout_writer = &stdout_file_writer.interface;
 
     const print_args = args[positional_start..];
 
     for (print_args, 0..) |arg, i| {
         if (interpret_esc) {
             try interpretEscCharacter(stdout_writer, arg);
-            try stdout_writer.flush();
         } else {
-            std.debug.print("{s}", .{arg});
+            try stdout_writer.print("{s}", .{arg});
         }
 
         if (i < print_args.len - 1) {
-            std.debug.print(" ", .{});
+            try stdout_writer.writeByte(' ');
         }
     }
 
     if (newline) {
-        std.debug.print("\n", .{});
+        try stdout_writer.writeByte('\n');
     }
+
+    try stdout_writer.flush();
 }
 
 pub fn interpretEscCharacter(writer: anytype, str: []const u8) !void {
