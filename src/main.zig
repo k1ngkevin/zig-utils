@@ -1,8 +1,8 @@
 const std = @import("std");
 const echo = @import("cmds/echo.zig");
-const Io = std.Io;
+const pwd = @import("cmds/pwd.zig");
 
-const Utils = enum { echo };
+const Utils = enum { echo, pwd };
 
 pub fn main(init: std.process.Init) !void {
     const arena: std.mem.Allocator = init.arena.allocator();
@@ -16,8 +16,11 @@ pub fn main(init: std.process.Init) !void {
     }
 
     if (std.mem.eql(u8, args[1], "--help") or std.mem.eql(u8, args[1], "-help")) {
-        std.debug.print("usage: zigutils <util> [arguments...]\n", .{});
-        std.debug.print("currently supported utils: \n - echo\n", .{});
+        std.debug.print("usage: zigutils <util> [arguments...]\n\n", .{});
+        std.debug.print("currently supported utils: \n", .{});
+        inline for (std.meta.fields(Utils)) |util| {
+            std.debug.print("- {s}\n", .{util.name});
+        }
         return;
     }
 
@@ -31,5 +34,6 @@ pub fn main(init: std.process.Init) !void {
 
     switch (command) {
         .echo => try echo.run(io, command_args),
+        .pwd => try pwd.run(io, command_args),
     }
 }
