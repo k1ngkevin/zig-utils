@@ -15,6 +15,9 @@ pub fn run(io: std.Io, args: []const []const u8) !void {
         } else if (std.mem.eql(u8, arg, "-E")) {
             interpret_esc = false;
             continue;
+        } else if (std.mem.startsWith(u8, arg, "-")) {
+            std.debug.print("cat: invalid option: {s}\n", .{arg});
+            return;
         } else {
             positional_start = i;
             break;
