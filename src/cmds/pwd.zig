@@ -4,7 +4,7 @@ pub fn run(io: std.Io, args: []const []const u8) !void {
     var stdout_writer = std.Io.File.stdout().writer(io, &.{});
     const stdout = &stdout_writer.interface;
     if (args.len > 0) {
-        try stdout.writeAll("pwd: too many arguemtns\n");
+        try stdout.writeAll("pwd: too many arguments\n");
         return;
     }
 

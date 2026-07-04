@@ -6,3 +6,4 @@ current utils:
 
 - echo
 - pwd
+- cat

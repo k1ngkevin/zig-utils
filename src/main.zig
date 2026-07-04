@@ -1,8 +1,9 @@
 const std = @import("std");
 const echo = @import("cmds/echo.zig");
 const pwd = @import("cmds/pwd.zig");
+const cat = @import("cmds/cat.zig");
 
-const Utils = enum { echo, pwd };
+const Utils = enum { echo, pwd, cat };
 
 pub fn main(init: std.process.Init) !void {
     const arena: std.mem.Allocator = init.arena.allocator();
@@ -35,5 +36,6 @@ pub fn main(init: std.process.Init) !void {
     switch (command) {
         .echo => try echo.run(io, command_args),
         .pwd => try pwd.run(io, command_args),
+        .cat => try cat.run(io, command_args),
     }
 }
