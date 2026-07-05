@@ -2,8 +2,9 @@ const std = @import("std");
 const echo = @import("cmds/echo.zig");
 const pwd = @import("cmds/pwd.zig");
 const cat = @import("cmds/cat.zig");
+const wc = @import("cmds/wc.zig");
 
-const Utils = enum { echo, pwd, cat };
+const Utils = enum { echo, pwd, cat, wc };
 
 pub fn main(init: std.process.Init) !void {
     const arena: std.mem.Allocator = init.arena.allocator();
@@ -37,5 +38,6 @@ pub fn main(init: std.process.Init) !void {
         .echo => try echo.run(io, command_args),
         .pwd => try pwd.run(io, command_args),
         .cat => try cat.run(io, command_args),
+        .wc => try wc.run(io, command_args),
     }
 }

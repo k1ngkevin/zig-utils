@@ -7,3 +7,4 @@ current utils:
 - echo
 - pwd
 - cat
+- wc
