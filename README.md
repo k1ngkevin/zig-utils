@@ -8,3 +8,4 @@ current utils:
 - pwd
 - cat
 - wc
+- head
