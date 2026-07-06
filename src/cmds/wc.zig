@@ -80,10 +80,11 @@ pub fn run(io: std.Io, args: []const []const u8) !void {
         };
         defer file.close(io);
 
-        var read_buffer: [8 * 1024]u8 = undefined;
-        var reader_state = file.reader(io, &read_buffer);
+        var reader_buffer: [8 * 1024]u8 = undefined;
+        var reader_state = file.reader(io, &reader_buffer);
         const reader = &reader_state.interface;
 
+        var read_buffer: [8 * 1024]u8 = undefined;
         const counts = try countFile(reader, &read_buffer);
         total_counts.addCounts(counts);
 
