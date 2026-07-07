@@ -9,3 +9,4 @@ current utils:
 - cat
 - wc
 - head
+- tail

@@ -4,8 +4,9 @@ const pwd = @import("cmds/pwd.zig");
 const cat = @import("cmds/cat.zig");
 const wc = @import("cmds/wc.zig");
 const head = @import("cmds/head.zig");
+const tail = @import("cmds/tail.zig");
 
-const Utils = enum { echo, pwd, cat, wc, head };
+const Utils = enum { echo, pwd, cat, wc, head, tail };
 
 pub fn main(init: std.process.Init) !void {
     const arena: std.mem.Allocator = init.arena.allocator();
@@ -41,5 +42,6 @@ pub fn main(init: std.process.Init) !void {
         .cat => try cat.run(io, command_args),
         .wc => try wc.run(io, command_args),
         .head => try head.run(io, command_args),
+        .tail => try tail.run(io, command_args, arena),
     }
 }
