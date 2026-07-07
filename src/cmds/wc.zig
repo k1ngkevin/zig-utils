@@ -60,6 +60,35 @@ pub fn run(io: std.Io, args: []const []const u8) !void {
     };
 
     const positional_args = args[positional_start..];
+    if (positional_args.len == 0) {
+        var stdin_buffer: [8 * 1024]u8 = undefined;
+        var stdin_reader_state = std.Io.File.stdin().reader(io, &stdin_buffer);
+        const stdin_reader = &stdin_reader_state.interface;
+
+        var read_buffer: [8 * 1024]u8 = undefined;
+
+        const counts = try countFile(stdin_reader, &read_buffer);
+
+        try printHeader(
+            stdout_writer,
+            count_lines,
+            count_words,
+            count_bytes,
+            false,
+        );
+
+        try printCounts(
+            stdout_writer,
+            counts,
+            null,
+            count_lines,
+            count_words,
+            count_bytes,
+        );
+
+        try stdout_writer.flush();
+    }
+
     if (positional_args.len > 0) {
         try printHeader(
             stdout_writer,

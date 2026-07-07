@@ -59,10 +59,12 @@ pub fn run(io: std.Io, args: []const []const u8) !void {
         var stdin_reader_state = std.Io.File.stdin().reader(io, &stdin_buffer);
         const stdin_reader = &stdin_reader_state.interface;
 
+        var read_buffer: [8 * 1024]u8 = undefined;
+
         if (display_bytes) {
-            try fileHeadByte(stdin_reader, &stdin_buffer, stdout, head_count);
+            try fileHeadByte(stdin_reader, &read_buffer, stdout, head_count);
         } else {
-            try fileHeadLine(stdin_reader, &stdin_buffer, stdout, head_count);
+            try fileHeadLine(stdin_reader, &read_buffer, stdout, head_count);
         }
 
         try stdout.flush();

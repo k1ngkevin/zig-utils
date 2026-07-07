@@ -33,6 +33,22 @@ pub fn run(io: std.Io, args: []const []const u8) !void {
 
     const positional_args = args[positional_start..];
 
+    if (positional_args.len == 0) {
+        var stdin_buffer: [8 * 1024]u8 = undefined;
+        var stdin_reader_state = std.Io.File.stdin().reader(io, &stdin_buffer);
+        const stdin_reader = &stdin_reader_state.interface;
+
+        var read_buffer: [8 * 1024]u8 = undefined;
+
+        if (line_numbers) {
+            try catNewline(stdin_reader, &read_buffer, stdout);
+        } else {
+            try cat(stdin_reader, &read_buffer, stdout);
+        }
+
+        try stdout_writer.flush();
+    }
+
     for (positional_args) |arg| {
         var file = std.Io.Dir.cwd().openFile(io, arg, .{}) catch |err| switch (err) {
             error.FileNotFound => {
@@ -55,6 +71,7 @@ pub fn run(io: std.Io, args: []const []const u8) !void {
             try cat(reader, &read_buffer, stdout);
         }
     }
+    try stdout_writer.flush();
 }
 
 pub fn cat(reader: *std.Io.Reader, read_buffer: []u8, writer: *std.Io.Writer) !void {
