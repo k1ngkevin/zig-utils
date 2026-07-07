@@ -3,16 +3,19 @@ const std = @import("std");
 pub fn run(io: std.Io, args: []const []const u8) !void {
     var display_lines = true;
     var display_bytes = false;
+    var flag_passed = false;
     var positional_start: usize = 0;
 
     for (args, 0..) |arg, i| {
         if (std.mem.eql(u8, arg, "-n")) {
             display_lines = true;
             display_bytes = false;
+            flag_passed = true;
             continue;
         } else if (std.mem.eql(u8, arg, "-c")) {
             display_bytes = true;
             display_lines = false;
+            flag_passed = true;
             continue;
         } else if (std.mem.startsWith(u8, arg, "-")) {
             std.debug.print("head: invalid option: {s}\n", .{arg});
@@ -48,6 +51,17 @@ pub fn run(io: std.Io, args: []const []const u8) !void {
             return;
         } else {
             std.debug.print("head: illegal line count -- 0\n", .{});
+            return;
+        }
+    } else if (args.len == 1 and flag_passed) {
+        std.debug.print("head: option requires and argument: {s}\n", .{args[0]});
+        return;
+    } else if (n == null and flag_passed) {
+        if (display_bytes) {
+            std.debug.print("head: illegal byte count -- {s}\n", .{args[positional_start]});
+            return;
+        } else {
+            std.debug.print("head: illegal line count -- {s}\n", .{args[positional_start]});
             return;
         }
     }
