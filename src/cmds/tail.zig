@@ -3,16 +3,19 @@ const std = @import("std");
 pub fn run(io: std.Io, args: []const []const u8, allocator: std.mem.Allocator) !void {
     var display_lines = true;
     var display_bytes = false;
+    var flag_passed = false;
     var positional_start: usize = 0;
 
     for (args, 0..) |arg, i| {
         if (std.mem.eql(u8, arg, "-n")) {
             display_lines = true;
             display_bytes = false;
+            flag_passed = true;
             continue;
         } else if (std.mem.eql(u8, arg, "-c")) {
             display_bytes = true;
             display_lines = false;
+            flag_passed = true;
             continue;
         } else if (std.mem.startsWith(u8, arg, "-")) {
             std.debug.print("head: invalid option: {s}\n", .{arg});
@@ -40,16 +43,12 @@ pub fn run(io: std.Io, args: []const []const u8, allocator: std.mem.Allocator) !
     if (n != null) {
         tail_count = n.?;
         positional_start += 1;
-    }
-
-    if (tail_count == 0) {
-        if (display_bytes) {
-            std.debug.print("tail: illegal byte count -- 0\n", .{});
-            return;
-        } else {
-            std.debug.print("tail: illegal line count -- 0\n", .{});
-            return;
-        }
+    } else if (args.len == 1 and flag_passed) {
+        std.debug.print("tail: option requires and argument: {s}\n", .{args[0]});
+        return;
+    } else if (n == null and flag_passed) {
+        std.debug.print("tail: illegal offset -- {s}\n", .{args[positional_start]});
+        return;
     }
 
     const positional_args = args[positional_start..];
@@ -82,9 +81,34 @@ pub fn run(io: std.Io, args: []const []const u8, allocator: std.mem.Allocator) !
         try stdout.flush();
         return;
     }
+
+    for (positional_args) |arg| {
+        var file = std.Io.Dir.cwd().openFile(io, arg, .{}) catch |err| switch (err) {
+            error.FileNotFound => {
+                std.debug.print("error: \"{s}\" : no such file or directory\n", .{args[0]});
+                return;
+            },
+            else => return err,
+        };
+        defer file.close(io);
+
+        if (display_lines) {
+            continue;
+        } else {
+            try tailByteSeekable(io, file, stdout, tail_count);
+        }
+
+        try stdout.print("==> {s} <==\n", .{arg});
+    }
 }
 
-pub fn tailLineStream(reader: *std.Io.Reader, read_buffer: []u8, writer: *std.Io.Writer, num_lines: u64, allocator: std.mem.Allocator) !void {
+pub fn tailLineStream(
+    reader: *std.Io.Reader,
+    read_buffer: []u8,
+    writer: *std.Io.Writer,
+    num_lines: u64,
+    allocator: std.mem.Allocator,
+) !void {
     var last_lines = try allocator.alloc([]u8, num_lines);
     defer allocator.free(last_lines);
 
@@ -128,7 +152,13 @@ pub fn tailLineStream(reader: *std.Io.Reader, read_buffer: []u8, writer: *std.Io
     try writer.flush();
 }
 
-pub fn tailByteStream(reader: *std.Io.Reader, read_buffer: []u8, writer: *std.Io.Writer, num_bytes: u64, allocator: std.mem.Allocator) !void {
+pub fn tailByteStream(
+    reader: *std.Io.Reader,
+    read_buffer: []u8,
+    writer: *std.Io.Writer,
+    num_bytes: u64,
+    allocator: std.mem.Allocator,
+) !void {
     var last_bytes = try allocator.alloc(u8, num_bytes);
     defer allocator.free(last_bytes);
 
@@ -156,6 +186,31 @@ pub fn tailByteStream(reader: *std.Io.Reader, read_buffer: []u8, writer: *std.Io
     while (i < count) : (i += 1) {
         const arr_index = (start + i) % last_bytes.len;
         try writer.writeByte(last_bytes[arr_index]);
+    }
+
+    try writer.flush();
+}
+
+pub fn tailByteSeekable(
+    io: std.Io,
+    file: std.Io.File,
+    writer: *std.Io.Writer,
+    num_bytes: u64,
+) !void {
+    const end: u64 = try file.length(io);
+    var offset: u64 = if (end > num_bytes) end - num_bytes else 0;
+
+    var write_buffer: [4 * 1024]u8 = undefined;
+
+    while (offset < end) {
+        const remaining = end - offset;
+        const read_amount: usize = @intCast(@min(remaining, write_buffer.len));
+
+        const n = try file.readPositionalAll(io, write_buffer[0..read_amount], offset);
+        if (n == 0) break;
+
+        try writer.writeAll(write_buffer[0..n]);
+        offset += n;
     }
 
     try writer.flush();
