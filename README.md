@@ -10,3 +10,5 @@ current utils:
 - wc
 - head
 - tail
+- true
+- false
