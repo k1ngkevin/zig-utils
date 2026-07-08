@@ -93,7 +93,7 @@ pub fn run(io: std.Io, args: []const []const u8, allocator: std.mem.Allocator) !
         defer file.close(io);
 
         if (display_lines) {
-            continue;
+            try tailLineSeekable(io, file, stdout, tail_count);
         } else {
             try tailByteSeekable(io, file, stdout, tail_count);
         }
@@ -191,6 +191,65 @@ pub fn tailByteStream(
     try writer.flush();
 }
 
+pub fn tailLineSeekable(
+    io: std.Io,
+    file: std.Io.File,
+    writer: *std.Io.Writer,
+    num_lines: u64,
+) !void {
+    const end: u64 = try file.length(io);
+
+    var lines_read: u64 = 0;
+    var pos = end;
+    var read_buffer: [4 * 1024]u8 = undefined;
+
+    while (pos > 0) {
+        const chunk_start: u64 = if (pos > read_buffer.len) pos - read_buffer.len else 0;
+        const read_amount: usize = @intCast(pos - chunk_start);
+
+        const n = try file.readPositionalAll(io, read_buffer[0..read_amount], chunk_start);
+
+        var i: usize = n;
+        while (i > 0) {
+            i -= 1;
+
+            if (read_buffer[i] == '\n') {
+                lines_read += 1;
+            }
+
+            if (lines_read > num_lines) {
+                var offset = chunk_start + i + 1;
+                while (offset < end) {
+                    const remaining = end - offset;
+                    const amount: usize = @intCast(@min(remaining, read_buffer.len));
+
+                    const read_pos = try file.readPositionalAll(io, read_buffer[0..amount], offset);
+                    if (read_pos == 0) break;
+
+                    try writer.writeAll(read_buffer[0..read_pos]);
+                    offset += read_pos;
+                }
+                try writer.flush();
+                return;
+            }
+        }
+        if (chunk_start == 0) break;
+        pos = chunk_start;
+    }
+
+    var offset: usize = 0;
+
+    while (true) {
+        const read_pos = try file.readPositionalAll(io, &read_buffer, offset);
+        if (read_pos == 0) break;
+
+        try writer.writeAll(read_buffer[0..read_pos]);
+        offset += read_pos;
+    }
+
+    try writer.flush();
+}
+
 pub fn tailByteSeekable(
     io: std.Io,
     file: std.Io.File,
@@ -200,16 +259,16 @@ pub fn tailByteSeekable(
     const end: u64 = try file.length(io);
     var offset: u64 = if (end > num_bytes) end - num_bytes else 0;
 
-    var write_buffer: [4 * 1024]u8 = undefined;
+    var read_buffer: [4 * 1024]u8 = undefined;
 
     while (offset < end) {
         const remaining = end - offset;
-        const read_amount: usize = @intCast(@min(remaining, write_buffer.len));
+        const read_amount: usize = @intCast(@min(remaining, read_buffer.len));
 
-        const n = try file.readPositionalAll(io, write_buffer[0..read_amount], offset);
+        const n = try file.readPositionalAll(io, read_buffer[0..read_amount], offset);
         if (n == 0) break;
 
-        try writer.writeAll(write_buffer[0..n]);
+        try writer.writeAll(read_buffer[0..n]);
         offset += n;
     }
 
