@@ -12,3 +12,4 @@ current utils:
 - tail
 - true
 - false
+- dirname

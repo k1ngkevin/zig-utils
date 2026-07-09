@@ -7,8 +7,19 @@ const head = @import("cmds/head.zig");
 const tail = @import("cmds/tail.zig");
 const true_cmd = @import("cmds/true.zig");
 const false_cmd = @import("cmds/false.zig");
+const dirname = @import("cmds/dirname.zig");
 
-const Utils = enum { echo, pwd, cat, wc, head, tail, true, false };
+const Utils = enum {
+    echo,
+    pwd,
+    cat,
+    wc,
+    head,
+    tail,
+    true,
+    false,
+    dirname,
+};
 
 pub fn main(init: std.process.Init) !void {
     const arena: std.mem.Allocator = init.arena.allocator();
@@ -47,5 +58,6 @@ pub fn main(init: std.process.Init) !void {
         .tail => try tail.run(io, command_args, arena),
         .true => true_cmd.run(),
         .false => false_cmd.run(),
+        .dirname => try dirname.run(io, command_args),
     }
 }
