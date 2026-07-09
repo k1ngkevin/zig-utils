@@ -12,4 +12,5 @@ current utils:
 - tail
 - true
 - false
+- tee
 - dirname

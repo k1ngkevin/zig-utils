@@ -1,0 +1,9 @@
+Permissions Size User  Date Modified Git Name
+.rw-r--r--@  923 kevin  8 Jul 17:29   -- build.zig
+.rw-r--r--@  299 kevin  3 Jul 20:40   -- build.zig.zon
+.rw-r--r--@ 2.0k kevin  9 Jul 17:04   -N diskinfo.txt
+.rw-r--r--@ 1.1k kevin  3 Jul 16:41   -- LICENSE
+.rw-r--r--@  214 kevin  9 Jul 16:22   -M README.md
+drwxr-xr-x@    - kevin  8 Jul 17:55   -N src
+.rw-r--r--@    0 kevin  9 Jul 17:44   -N test.txt
+drwxr-xr-x@    - kevin  3 Jul 16:44   -I zig-out
