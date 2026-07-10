@@ -10,6 +10,7 @@ const false_cmd = @import("cmds/false.zig");
 const dirname = @import("cmds/dirname.zig");
 const basename = @import("cmds/basename.zig");
 const tee = @import("cmds/tee.zig");
+const touch = @import("cmds/touch.zig");
 
 const Utils = enum {
     echo,
@@ -23,6 +24,7 @@ const Utils = enum {
     dirname,
     basename,
     tee,
+    touch,
 };
 
 pub fn main(init: std.process.Init) !void {
@@ -65,5 +67,6 @@ pub fn main(init: std.process.Init) !void {
         .tee => try tee.run(io, command_args),
         .dirname => try dirname.run(io, command_args),
         .basename => try basename.run(io, command_args),
+        .touch => try touch.run(io, command_args),
     }
 }
