@@ -8,6 +8,7 @@ const tail = @import("cmds/tail.zig");
 const true_cmd = @import("cmds/true.zig");
 const false_cmd = @import("cmds/false.zig");
 const dirname = @import("cmds/dirname.zig");
+const basename = @import("cmds/basename.zig");
 const tee = @import("cmds/tee.zig");
 
 const Utils = enum {
@@ -19,8 +20,9 @@ const Utils = enum {
     tail,
     true,
     false,
-    tee,
     dirname,
+    basename,
+    tee,
 };
 
 pub fn main(init: std.process.Init) !void {
@@ -62,5 +64,6 @@ pub fn main(init: std.process.Init) !void {
         .false => false_cmd.run(),
         .tee => try tee.run(io, command_args),
         .dirname => try dirname.run(io, command_args),
+        .basename => try basename.run(io, command_args),
     }
 }
