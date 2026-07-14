@@ -17,3 +17,4 @@ current utils:
 - tee
 - touch
 - mkdir
+- ls
