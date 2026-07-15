@@ -11,7 +11,7 @@ const lsFlags = struct {
     one_per_line: bool = false,
 };
 
-pub fn run(io: std.Io, args: []const []const u8) !void {
+pub fn run(io: std.Io, args: []const []const u8, allocator: std.mem.Allocator) !void {
     var flags = lsFlags{};
     var positional_start: usize = 0;
 
@@ -51,7 +51,7 @@ pub fn run(io: std.Io, args: []const []const u8) !void {
         );
         defer dir.close(io);
 
-        try ls(io, dir, stdout, flags);
+        try ls(io, dir, stdout, allocator, flags);
         return;
     }
 
@@ -63,7 +63,7 @@ pub fn run(io: std.Io, args: []const []const u8) !void {
         );
         defer dir.close(io);
 
-        try ls(io, dir, stdout, flags);
+        try ls(io, dir, stdout, allocator, flags);
     }
 }
 
@@ -83,15 +83,37 @@ pub fn printEntry(name: []const u8, writer: *std.Io.Writer, one_per_line: bool) 
     }
 }
 
-pub fn ls(io: std.Io, dir: std.Io.Dir, writer: *std.Io.Writer, flags: lsFlags) !void {
-    var dirIterator = dir.iterate();
-    while (try dirIterator.next(io)) |dirContent| {
-        if (!shouldInclude(dirContent.name, flags.hidden_mode)) {
+pub fn sortAlphabetically(_: void, lhs: []u8, rhs: []u8) bool {
+    return std.ascii.orderIgnoreCase(lhs, rhs) == .lt;
+}
+
+pub fn ls(io: std.Io, dir: std.Io.Dir, writer: *std.Io.Writer, allocator: std.mem.Allocator, flags: lsFlags) !void {
+    var dir_iterator = dir.iterate();
+    var dir_contents: std.ArrayList([]u8) = .empty;
+    defer {
+        for (dir_contents.items) |name| {
+            allocator.free(name);
+        }
+        dir_contents.deinit(allocator);
+    }
+
+    while (try dir_iterator.next(io)) |dir_content| {
+        if (!shouldInclude(dir_content.name, flags.hidden_mode)) {
             continue;
         }
 
-        try printEntry(dirContent.name, writer, flags.one_per_line);
+        const owned_name = try allocator.dupe(u8, dir_content.name);
+        errdefer allocator.free(owned_name);
+
+        try dir_contents.append(allocator, owned_name);
     }
+
+    std.mem.sort([]u8, dir_contents.items, {}, sortAlphabetically);
+
+    for (dir_contents.items) |name| {
+        try printEntry(name, writer, flags.one_per_line);
+    }
+
     if (!flags.one_per_line) {
         try writer.writeByte('\n');
     }

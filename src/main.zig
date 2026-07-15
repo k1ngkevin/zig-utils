@@ -73,6 +73,6 @@ pub fn main(init: std.process.Init) !void {
         .basename => try basename.run(io, command_args),
         .touch => try touch.run(io, command_args),
         .mkdir => try mkdir.run(io, command_args),
-        .ls => try ls.run(io, command_args),
+        .ls => try ls.run(io, command_args, arena),
     }
 }
