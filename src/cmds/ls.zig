@@ -6,8 +6,14 @@ const HiddenMode = enum {
     all,
 };
 
+const SortMode = enum {
+    alphabetical,
+    reverse_alphabetical,
+};
+
 const lsFlags = struct {
     hidden_mode: HiddenMode = .none,
+    sort_mode: SortMode = .alphabetical,
     one_per_line: bool = false,
     show_only_dir: bool = false,
 };
@@ -28,6 +34,7 @@ pub fn run(io: std.Io, args: []const []const u8, allocator: std.mem.Allocator) !
                     'a' => flags.hidden_mode = .all,
                     '1' => flags.one_per_line = true,
                     'd' => flags.show_only_dir = true,
+                    'r' => flags.sort_mode = .reverse_alphabetical,
                     else => {
                         std.debug.print("ls: unknown flag -{c}\n", .{ch});
                         return;
@@ -108,6 +115,9 @@ pub fn printEntry(name: []const u8, writer: *std.Io.Writer, one_per_line: bool) 
 pub fn sortAlphabetically(_: void, lhs: []u8, rhs: []u8) bool {
     return std.ascii.orderIgnoreCase(lhs, rhs) == .lt;
 }
+pub fn sortAlphabeticallyReversed(_: void, lhs: []u8, rhs: []u8) bool {
+    return std.ascii.orderIgnoreCase(lhs, rhs) == .gt;
+}
 
 pub fn ls(
     io: std.Io,
@@ -147,8 +157,10 @@ pub fn ls(
 
         try dir_contents.append(allocator, owned_name);
     }
-
-    std.mem.sort([]u8, dir_contents.items, {}, sortAlphabetically);
+    switch (flags.sort_mode) {
+        .alphabetical => std.mem.sort([]u8, dir_contents.items, {}, sortAlphabetically),
+        .reverse_alphabetical => std.mem.sort([]u8, dir_contents.items, {}, sortAlphabeticallyReversed),
+    }
 
     for (dir_contents.items) |name| {
         try printEntry(name, writer, flags.one_per_line);
