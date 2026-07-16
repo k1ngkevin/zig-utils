@@ -2,13 +2,14 @@ const std = @import("std");
 
 const HiddenMode = enum {
     none,
-    almost_all, // -A
-    all, // -a
+    almost_all,
+    all,
 };
 
 const lsFlags = struct {
     hidden_mode: HiddenMode = .none,
     one_per_line: bool = false,
+    show_only_dir: bool = false,
 };
 
 pub fn run(io: std.Io, args: []const []const u8, allocator: std.mem.Allocator) !void {
@@ -26,6 +27,7 @@ pub fn run(io: std.Io, args: []const []const u8, allocator: std.mem.Allocator) !
                     'A' => flags.hidden_mode = .almost_all,
                     'a' => flags.hidden_mode = .all,
                     '1' => flags.one_per_line = true,
+                    'd' => flags.show_only_dir = true,
                     else => {
                         std.debug.print("ls: unknown flag -{c}\n", .{ch});
                         return;
@@ -51,19 +53,39 @@ pub fn run(io: std.Io, args: []const []const u8, allocator: std.mem.Allocator) !
         );
         defer dir.close(io);
 
-        try ls(io, dir, stdout, allocator, flags);
+        try ls(
+            io,
+            dir,
+            ".",
+            stdout,
+            allocator,
+            flags,
+        );
         return;
     }
 
     for (postional_args) |arg| {
-        var dir: std.Io.Dir = try std.Io.Dir.cwd().openDir(
+        var dir: std.Io.Dir = std.Io.Dir.cwd().openDir(
             io,
             arg,
             .{ .iterate = true },
-        );
+        ) catch |err| switch (err) {
+            error.FileNotFound => {
+                std.debug.print("\"{s}\", No such file or directory", .{arg});
+                return;
+            },
+            else => return err,
+        };
         defer dir.close(io);
 
-        try ls(io, dir, stdout, allocator, flags);
+        try ls(
+            io,
+            dir,
+            arg,
+            stdout,
+            allocator,
+            flags,
+        );
     }
 }
 
@@ -87,7 +109,25 @@ pub fn sortAlphabetically(_: void, lhs: []u8, rhs: []u8) bool {
     return std.ascii.orderIgnoreCase(lhs, rhs) == .lt;
 }
 
-pub fn ls(io: std.Io, dir: std.Io.Dir, writer: *std.Io.Writer, allocator: std.mem.Allocator, flags: lsFlags) !void {
+pub fn ls(
+    io: std.Io,
+    dir: std.Io.Dir,
+    display_name: []const u8,
+    writer: *std.Io.Writer,
+    allocator: std.mem.Allocator,
+    flags: lsFlags,
+) !void {
+    if (flags.show_only_dir) {
+        try printEntry(display_name, writer, flags.one_per_line);
+
+        if (!flags.one_per_line) {
+            try writer.writeByte('\n');
+        }
+
+        try writer.flush();
+        return;
+    }
+
     var dir_iterator = dir.iterate();
     var dir_contents: std.ArrayList([]u8) = .empty;
     defer {
